@@ -1,18 +1,25 @@
-from odoo.tests.common import SingleTransactionCase
+from odoo.tests.common import TransactionCase, new_test_user
 
 
-class CrmNACECase(SingleTransactionCase):
+class CrmNACECase(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.nace_0 = cls.env["res.partner.nace"].create(
-            {"name": "name_0", "code": "code_0"}
+        cls.uid = new_test_user(
+            cls.env,
+            login="user",
+            groups="base.group_user,sales_team.group_sale_salesman",
         )
-        cls.nace_1 = cls.env["res.partner.nace"].create(
-            {"name": "name_1", "code": "code_1"}
+
+        partner_industry = cls.env["res.partner.industry"]
+        cls.nace_0 = partner_industry.create(
+            {"name": "name_0", "full_name": "code_0 - name_0"}
         )
-        cls.nace_2 = cls.env["res.partner.nace"].create(
-            {"name": "name_2", "code": "code_2"}
+        cls.nace_1 = partner_industry.create(
+            {"name": "name_1", "full_name": "code_1 - name_1"}
+        )
+        cls.nace_2 = partner_industry.create(
+            {"name": "name_2", "full_name": "code_2 - name_2"}
         )
 
     def test_data_transferred_to_partner(self):
@@ -22,12 +29,12 @@ class CrmNACECase(SingleTransactionCase):
             {
                 "name": "test lead",
                 "partner_name": "someone",
-                "nace_id": self.nace_0.id,
-                "secondary_nace_ids": [(4, self.nace_1.id), (4, self.nace_2.id)],
+                "industry_id": self.nace_0.id,
+                "secondary_industry_ids": [(4, self.nace_1.id), (4, self.nace_2.id)],
             }
         )
         self.assertFalse(lead.partner_id)
         # Create that partner automatically
         partner = lead._create_customer()
-        self.assertEqual(partner.nace_id, self.nace_0)
-        self.assertEqual(partner.secondary_nace_ids, self.nace_1 | self.nace_2)
+        self.assertEqual(partner.industry_id, self.nace_0)
+        self.assertEqual(partner.secondary_industry_ids, self.nace_1 | self.nace_2)
